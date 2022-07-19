@@ -1,6 +1,7 @@
 #!/usr/bin/env Rscript
 args = commandArgs(trailingOnly=TRUE)
 obj<-readRDS(paste(args[1]))
+obj.name <- paste(args[1])
 
 # load packages
 library(Signac,quietly = T)
@@ -23,12 +24,17 @@ GetDARs <- function(object, assay, ident1, ident2) {
                 assay = assay, 
                 ident.1 = ident1, 
                 ident.2 = ident2, 
-                logfc.threshold = 0.20,
-                min.pct = 0.25,
+                logfc.threshold = 0.25,
+                min.pct = 0.05,
                 test.use = 'LR',
-                latent.vars = paste("nFeature", assay, sep = "_")) %>% filter(p_val_adj < 0.05)
-    posDARs <- allDARs %>% filter(avg_log2FC > 0.2)
-    negDARs <- allDARs %>% filter(avg_log2FC < 0.2)
+                latent.vars = paste("nCount", assay, sep = "_")) %>% filter(p_val_adj < 0.05)
+    cf <- ClosestFeature(object=obj, regions=rownames(allDARs), annotation=Annotation(obj), sep=c(':', '-'))
+    allDARs <- cbind(allDARs, gene=cf$gene_name, distance=cf$distance)
+    allDARs$category <- "DAR"
+
+    allDARs <- tibble::rownames_to_column(allDARs, var="region")
+    posDARs <- allDARs %>% filter(avg_log2FC > 0)
+    negDARs <- allDARs %>% filter(avg_log2FC < 0)
     return(list(All_DARs = allDARs, Closed_DARs = posDARs, Open_DARs = negDARs))
 }
 
@@ -56,7 +62,7 @@ idents=unique(Idents(obj))
 DAR_assay="peaks"
 #celltype= idents[[i]]
 #celltype="Mesenchymal_1"
-print(paste("Find DARs for ",obj,"...",sep=""))
+print(paste("Find DARs for ","[placeholder]","...",sep=""))
 
 ### prevent writing results from last loop to current loop
 dar_0vs1<-list()
@@ -71,34 +77,34 @@ dar_2vs6<-list()
 dar_4vs6<-list()
 
 
-print(paste("Find DARs for ",obj," 0vs1...",sep=""))
+print(paste("Find DARs for ","[placeholder2]"," 0vs1...",sep=""))
 tryCatch(dar_0vs1<-GetDARs(object=obj,assay=DAR_assay,ident1="mfin",ident2="1dpa"), error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
 
-print(paste("Find DARs for ",obj," 0vs2...",sep=""))
+print(paste("Find DARs for ","placeholder"," 0vs2...",sep=""))
 tryCatch(dar_0vs2<-GetDARs(object=obj,assay=DAR_assay,ident1="mfin",ident2="2dpa"), error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
 
-print(paste("Find DARs for ",obj," 0vs4...",sep=""))
+print(paste("Find DARs for "," 0vs4...",sep=""))
 tryCatch(dar_0vs4<-GetDARs(object=obj,assay=DAR_assay,ident1="mfin",ident2="4dpa"), error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
 
-print(paste("Find DARs for ",obj," 0vs6...",sep=""))
+print(paste("Find DARs for "," 0vs6...",sep=""))
 tryCatch(dar_0vs6<-GetDARs(object=obj,assay=DAR_assay,ident1="mfin",ident2="6dpa"), error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
 
-print(paste("Find DARs for ",obj," 1vs2...",sep=""))
+print(paste("Find DARs for "," 1vs2...",sep=""))
 tryCatch(dar_1vs2<-GetDARs(object=obj,assay=DAR_assay,ident1="1dpa",ident2="2dpa"), error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
 
-print(paste("Find DARs for ",obj," 1vs4...",sep=""))
+print(paste("Find DARs for "," 1vs4...",sep=""))
 tryCatch(dar_1vs4<-GetDARs(object=obj,assay=DAR_assay,ident1="1dpa",ident2="4dpa"), error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
 
-print(paste("Find DARs for ",obj," 1vs6...",sep=""))
+print(paste("Find DARs for "," 1vs6...",sep=""))
 tryCatch(dar_1vs6<-GetDARs(object=obj,assay=DAR_assay,ident1="1dpa",ident2="6dpa"), error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
 
-print(paste("Find DARs for ",obj," 2vs4...",sep=""))
+print(paste("Find DARs for "," 2vs4...",sep=""))
 tryCatch(dar_2vs4<-GetDARs(object=obj,assay=DAR_assay,ident1="2dpa",ident2="4dpa"), error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
 
-print(paste("Find DARs for ",obj," 2vs6...",sep=""))
+print(paste("Find DARs for "," 2vs6...",sep=""))
 tryCatch(dar_2vs6<-GetDARs(object=obj,assay=DAR_assay,ident1="2dpa",ident2="6dpa"), error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
 
-print(paste("Find DARs for ",obj," 4vs6...",sep=""))
+print(paste("Find DARs for "," 4vs6...",sep=""))
 tryCatch(dar_4vs6<-GetDARs(object=obj,assay=DAR_assay,ident1="4dpa",ident2="6dpa"), error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
 
 dar.list<-list()
@@ -116,7 +122,8 @@ dar.list<-list(
     )
 
 require(openxlsx)
-print(paste("write DARs to xlsx ",obj,"...",sep=""))
-write.xlsx(dar.list, file = paste(sample,obj,"DARs_stage_comparison.xlsx",sep="_"), sheetName = names(dar.list), rowNames = F,overwrite=T)
+print(paste("write DARs to xlsx ","...",sep=""))
+write.xlsx(dar.list, file = paste(sample,obj.name,"DARs_stage_comparison.xlsx",sep="_"), sheetName = names(dar.list), rowNames = F,overwrite=T)
 stat <-lapply(dar.list, function(x) {print(nrow(x))}) %>% unlist() %>% data.frame() 
-write.table(stat,file=paste(sample,obj,"DARs_stage_comparison_stats.txt",sep="_"),quote=F,sep="\t")
+write.table(stat,file=paste(sample,obj.name,"DARs_stage_comparison_stats.txt",sep="_"),quote=F,sep="\t")
+

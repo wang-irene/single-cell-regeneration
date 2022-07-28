@@ -23,3 +23,5 @@ integrated_atac[["celltype_wnn_merge"]] <- mapvalues(integrated_atac$celltype_wn
     "Metaphocyte",
     "C12","C18"
     ))
+
+Idents(integrated_atac) <- "celltype_wnn_merge" ## Update your object's ident
